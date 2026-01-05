@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReviewExplorer</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="wrapper">
+        <header class="main-header">
+            <div class="logo">ReviewExplorer</div>
+            <nav>
+                <ul>
+                    <li><a href="#" class="active">Поиск</a></li>
+                    <li><a href="#">О проекте</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main class="content">
+            <div class="hero-section">
+                <h1>Анализ общественных мнений</h1>
+                <p>Универсальная платформа для мониторинга и анализа объектов.</p>
+            </div>
+
+            <div class="search-wrapper">
+                <div class="search-container">
+                    <input type="text" id="school-search" placeholder="Введите название школы для анализа..."
+                        autocomplete="off">
+                    <button id="search-btn">Анализировать</button>
+                </div>
+                <div id="suggestions" class="suggestions-list hidden"></div>
+            </div>
+        </main>
+
+        <footer class="main-footer">
+            <a href="https://github.com/REKVID">GitHub</a>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>

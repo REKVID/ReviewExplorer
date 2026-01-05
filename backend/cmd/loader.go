@@ -17,7 +17,7 @@ func main() {
 		err = db.Ping()
 	}
 	if err != nil {
-		log.Fatalf("Ошибка подключения бд", err)
+		log.Fatalf("Ошибка подключения бд %v", err)
 	}
 	defer db.Close()
 
