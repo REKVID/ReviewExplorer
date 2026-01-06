@@ -8,6 +8,44 @@ const input = document.getElementById('school-search'),
 
 let timer;
 
+input.oninput = (e) => {
+    clearTimeout(timer);
+    const q = e.target.value.trim();
+    if (q.length < 2) return list.classList.add('hidden');
+
+    timer = setTimeout(async () => {
+        try {
+            const res = await fetch(`http://localhost:8081/schools?q=${encodeURIComponent(q)}`);
+            const data = await res.json();
+            renderSuggestions(data ? data.slice(0, 5) : []);
+        } catch (err) {
+            console.error(err);
+        }
+    }, 300);
+};
+
+function renderSuggestions(data) {
+    list.innerHTML = data.length ? '' : '<div class="suggestion-item">Объект не найден в базе</div>';
+    data.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'suggestion-item';
+        div.textContent = s.full_name;
+        div.onclick = () => {
+            input.value = s.full_name;
+            list.classList.add('hidden');
+            startAnalysis(s.full_name);
+        };
+        list.appendChild(div);
+    });
+    list.classList.remove('hidden');
+}
+
+document.onclick = (e) => {
+    if (!e.target.closest('.search-wrapper')) {
+        list.classList.add('hidden');
+    }
+};
+
 searchBtn.onclick = () => {
     const q = input.value.trim();
     if (q.length < 3) return alert('Введите название объекта для анализа');
@@ -15,6 +53,56 @@ searchBtn.onclick = () => {
     startAnalysis(q);
 };
 
+async function startAnalysis(query) {
+    searchBtn.disabled = true;
+    view.classList.remove('hidden');
+    title.textContent = query;
+    statusMsg.textContent = '⏳ Поиск в базе и сбор отзывов...';
+    text.textContent = 'Это может занять от 30 до 60 секунд, если отзывов еще нет в нашей системе.';
+
+    try {
+        const res = await fetch('http://localhost:8081/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: query })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            title.textContent = data.school_name;
+            statusMsg.textContent = '✅ Анализ успешно завершен';
+            text.innerHTML = `
+                <div style="font-size: 1.2rem; margin-bottom: 1.5rem; font-weight: 600;">
+                    Общее количество отзывов: ${data.stats.total}
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; text-align: center;">
+                    <div style="padding: 1rem; background: #ecfdf5; border-radius: 12px;">
+                        <div style="color: #059669; font-size: 1.5rem; font-weight: 800;">${data.stats.positive}</div>
+                        <div style="color: #065f46; font-size: 0.9rem;">Положительных</div>
+                    </div>
+                    <div style="padding: 1rem; background: #fef2f2; border-radius: 12px;">
+                        <div style="color: #dc2626; font-size: 1.5rem; font-weight: 800;">${data.stats.negative}</div>
+                        <div style="color: #991b1b; font-size: 0.9rem;">Отрицательных</div>
+                    </div>
+                    <div style="padding: 1rem; background: #f8fafc; border-radius: 12px;">
+                        <div style="color: #64748b; font-size: 1.5rem; font-weight: 800;">${data.stats.neutral}</div>
+                        <div style="color: #334155; font-size: 0.9rem;">Нейтральных</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            statusMsg.textContent = '❌ Внимание';
+            text.textContent = data.message || 'Объект не найден';
+        }
+    } catch (err) {
+        statusMsg.textContent = '❌ Ошибка системы';
+        text.textContent = 'Не удалось получить ответ от сервера';
+        console.error(err);
+    } finally {
+        searchBtn.disabled = false;
+    }
+}
 input.onkeypress = (e) => {
     if (e.key === 'Enter') searchBtn.click();
 };

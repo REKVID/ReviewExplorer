@@ -170,6 +170,9 @@ button:hover {
     margin-top: 2rem;
 }
 
+.hidden {
+    display: none;
+}
 
 .main-footer {
     background: var(--white);
