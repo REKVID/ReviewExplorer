@@ -36,7 +36,7 @@ if __name__ == "__main__":
                 conn.commit()
                 logger.info(f" saved {len(reviews)} reviews")
             else:
-                logger.info("Not found")
+                logger.info("No reviews found")
         else:
             logger.warning(f"school not in db: {name}")
         conn.close()

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"reviewExplorer/backend/analytics"
 	"reviewExplorer/backend/db"
 	"reviewExplorer/backend/models"
 )
@@ -77,18 +78,31 @@ func Analyze(w http.ResponseWriter, r *http.Request) {
 		db.DB.QueryRow("SELECT COUNT(*) FROM reviews WHERE school_id = ?", id).Scan(&reviewCount)
 	}
 
-	var positive, negative int
-	db.DB.QueryRow("SELECT COUNT(*) FROM reviews WHERE school_id = ? AND sentiment = 'positive'", id).Scan(&positive)
-	db.DB.QueryRow("SELECT COUNT(*) FROM reviews WHERE school_id = ? AND sentiment = 'negative'", id).Scan(&negative)
+	var reviews []models.Review
+	var pos, neg int
+	rows, _ := db.DB.Query("SELECT id, school_id, raw_text, sentiment FROM reviews WHERE school_id = ?", id)
+	for rows.Next() {
+		var rev models.Review
+		rows.Scan(&rev.ID, &rev.SchoolID, &rev.RawText, &rev.Sentiment)
+		reviews = append(reviews, rev)
+		if rev.Sentiment == "positive" {
+			pos++
+		}
+		if rev.Sentiment == "negative" {
+			neg++
+		}
+	}
+	defer rows.Close()
 
 	response := map[string]interface{}{
 		"school_name": fullName,
 		"stats": map[string]int{
-			"total":    reviewCount,
-			"positive": positive,
-			"negative": negative,
-			"neutral":  reviewCount - positive - negative,
+			"total":    len(reviews),
+			"positive": pos,
+			"negative": neg,
+			"neutral":  len(reviews) - pos - neg,
 		},
+		"analytics": analytics.Analyze(reviews),
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -72,11 +72,12 @@ async function startAnalysis(query) {
         if (res.ok) {
             title.textContent = data.school_name;
             statusMsg.textContent = '✅ Анализ успешно завершен';
-            text.innerHTML = `
+
+            let html = `
                 <div style="font-size: 1.2rem; margin-bottom: 1.5rem; font-weight: 600;">
                     Общее количество отзывов: ${data.stats.total}
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; text-align: center;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; text-align: center; margin-bottom: 2rem;">
                     <div style="padding: 1rem; background: #ecfdf5; border-radius: 12px;">
                         <div style="color: #059669; font-size: 1.5rem; font-weight: 800;">${data.stats.positive}</div>
                         <div style="color: #065f46; font-size: 0.9rem;">Положительных</div>
@@ -91,12 +92,36 @@ async function startAnalysis(query) {
                     </div>
                 </div>
             `;
+
+            if (data.analytics) {
+                data.analytics.forEach(item => {
+                    html += `<h3 style="margin: 1.5rem 0 0.5rem; font-size: 1rem;">${item.name}</h3>`;
+                    const entries = Object.entries(item.payload);
+                    const max = Math.max(...entries.map(e => e[1])) || 1;
+
+                    entries.forEach(([label, value]) => {
+                        const width = (value / max) * 100;
+                        html += `
+                            <div style="margin-bottom: 0.5rem;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 2px;">
+                                    <span>${label}</span>
+                                    <span>${typeof value === 'number' ? value.toFixed(1) : value}</span>
+                                </div>
+                                <div style="background: #f1f5f9; border-radius: 4px; height: 8px;">
+                                    <div style="background: var(--primary); width: ${width}%; height: 100%; border-radius: 4px; transition: width 1s;"></div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                });
+            }
+            text.innerHTML = html;
         } else {
-            statusMsg.textContent = '❌ Внимание';
+            statusMsg.textContent = 'Внимание';
             text.textContent = data.message || 'Объект не найден';
         }
     } catch (err) {
-        statusMsg.textContent = '❌ Ошибка системы';
+        statusMsg.textContent = 'Ошибка системы';
         text.textContent = 'Не удалось получить ответ от сервера';
         console.error(err);
     } finally {
