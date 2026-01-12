@@ -80,10 +80,10 @@ func Analyze(w http.ResponseWriter, r *http.Request) {
 
 	var reviews []models.Review
 	var pos, neg int
-	rows, _ := db.DB.Query("SELECT id, school_id, raw_text, sentiment FROM reviews WHERE school_id = ?", id)
+	rows, _ := db.DB.Query("SELECT id, school_id, published_at, raw_text, sentiment FROM reviews WHERE school_id = ?", id)
 	for rows.Next() {
 		var rev models.Review
-		rows.Scan(&rev.ID, &rev.SchoolID, &rev.RawText, &rev.Sentiment)
+		rows.Scan(&rev.ID, &rev.SchoolID, &rev.PublishedAt, &rev.RawText, &rev.Sentiment)
 		reviews = append(reviews, rev)
 		if rev.Sentiment == "positive" {
 			pos++

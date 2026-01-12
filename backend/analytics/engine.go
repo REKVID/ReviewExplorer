@@ -2,10 +2,13 @@ package analytics
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"reviewExplorer/backend/models"
+	"sort"
 	"strings"
+	"time"
 )
 
 type Result struct {
@@ -24,8 +27,6 @@ func init() {
 	if err == nil {
 		json.Unmarshal(data, &keywords)
 		log.Printf("[Analytics] Keywords loaded: %d groups", len(keywords))
-	} else {
-		log.Printf("[Analytics] Failed to load keywords: %v", err)
 	}
 }
 
@@ -38,35 +39,77 @@ func GetTheme(text string) string {
 			}
 		}
 	}
-	return "Другое"
+	return "Общие впечатления"
 }
 
 func Analyze(reviews []models.Review) []Result {
-	themes := make(map[string]int)
-	depth := map[string]float64{"Позитивные": 0, "Отрицательные": 0}
+	posThemes := make(map[string]int)
+	negThemes := make(map[string]int)
+	depth := map[string]float64{"Положительные": 0, "Отрицательные": 0}
 	posCount, negCount := 0, 0
+
+	type stat struct{ Pos, Neg int }
+	dynamics := make(map[string]*stat)
 
 	for _, r := range reviews {
 		words := float64(len(strings.Fields(r.RawText)))
+		theme := GetTheme(r.RawText)
+
 		if r.Sentiment == "positive" {
-			depth["Позитивные"] += words
+			depth["Положительные"] += words
 			posCount++
-			themes[GetTheme(r.RawText)]++
+			posThemes[theme]++
 		} else if r.Sentiment == "negative" {
 			depth["Отрицательные"] += words
 			negCount++
+			negThemes[theme]++
+		}
+
+		if len(r.PublishedAt) >= 10 {
+			t, _ := time.Parse("2006-01-02", r.PublishedAt[:10])
+			key := fmt.Sprintf("%d", t.Year())
+			if _, ok := dynamics[key]; !ok {
+				dynamics[key] = &stat{}
+			}
+			if r.Sentiment == "positive" {
+				dynamics[key].Pos++
+			} else if r.Sentiment == "negative" {
+				dynamics[key].Neg++
+			}
 		}
 	}
 
 	if posCount > 0 {
-		depth["Позитивные"] /= float64(posCount)
+		depth["Положительные"] /= float64(posCount)
 	}
 	if negCount > 0 {
 		depth["Отрицательные"] /= float64(negCount)
 	}
 
+	var dynKeys []string
+	for k := range dynamics {
+		dynKeys = append(dynKeys, k)
+	}
+	sort.Strings(dynKeys)
+
+	type pt struct {
+		Label string  `json:"label"`
+		Value float64 `json:"value"`
+	}
+	var dynPayload []pt
+	for _, k := range dynKeys {
+		total := dynamics[k].Pos + dynamics[k].Neg
+		val := 0.0
+		if total > 0 {
+			val = float64(dynamics[k].Pos) / float64(total) * 100
+		}
+		dynPayload = append(dynPayload, pt{k, val})
+	}
+
 	return []Result{
-		{Name: "Темы отзывов", Type: "bar", Payload: themes},
-		{Name: "Средняя длина (слов)", Type: "bar", Payload: depth},
+		{Name: "Сильные стороны", Type: "bar", Payload: posThemes},
+		{Name: "Проблемные зоны", Type: "bar", Payload: negThemes},
+		{Name: "Средняя длина отзыва (слов)", Type: "bar", Payload: depth},
+		{Name: "Динамика удовлетворенности (%)", Type: "line", Payload: dynPayload},
 	}
 }

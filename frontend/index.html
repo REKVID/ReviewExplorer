@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ReviewExplorer</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=101">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 
@@ -16,43 +16,57 @@
             <nav>
                 <ul>
                     <li><a href="#" class="active">Поиск</a></li>
-                    <li><a href="#">О проекте</a></li>
+                    <li><a href="https://github.com/REKVID">GitHub</a></li>
                 </ul>
             </nav>
         </header>
 
         <main class="content">
             <div class="hero-section">
-                <h1>Анализ общественных мнений</h1>
-                <p>Универсальная платформа для мониторинга и анализа объектов.</p>
+                <h1>Анализ мнений</h1>
+                <p>Платформа для мониторинга объектов.</p>
             </div>
 
             <div class="search-wrapper">
                 <div class="search-container">
-                    <input type="text" id="school-search" placeholder="Введите название школы для анализа..."
-                        autocomplete="off">
+                    <input type="text" id="school-search" placeholder="Введите название..." autocomplete="off">
                     <button id="search-btn">Анализировать</button>
                 </div>
                 <div id="suggestions" class="suggestions-list hidden"></div>
             </div>
 
-            <div id="analytics-view" class="hidden" style="width: 100%; max-width: 700px;">
+            <div id="analytics-view" class="hidden">
                 <div class="card">
-                    <h2 id="school-title" style="margin-bottom: 0.5rem; color: var(--primary);">Название объекта</h2>
-                    <p id="status-msg"
-                        style="margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--sec); min-height: 1.2rem;"></p>
-                    <div id="analytics-text" style="border-top: 1px solid #f3f4f6; padding-top: 1.5rem;">
-                        Результаты появятся сразу после завершения обработки...
+                    <h2 id="school-title" style="color:var(--primary)">Школа</h2>
+                    <p id="status-msg" style="color:var(--sec); font-size:0.9rem; margin:10px 0"></p>
+                    <div id="analytics-text" style="border-top:1px solid #eee; padding-top:1rem"></div>
+                </div>
+
+                <div id="analytics-charts" style="margin-top:20px">
+                    <div class="chart-container">
+                        <p class="chart-desc">АНАЛИЗ СИЛЬНЫХ СТОРОН<br><small>Упоминания в позитивном контексте</small>
+                        </p>
+                        <canvas id="chart-0"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <p class="chart-desc">КРИТИЧЕСКИЕ ЗОНЫ<br><small>Основные жалобы и проблемы</small></p>
+                        <canvas id="chart-1"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <p class="chart-desc">АРГУМЕНТИРОВАННОСТЬ МНЕНИЙ<br><small>Средний объем отзыва в словах</small>
+                        </p>
+                        <canvas id="chart-2"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <p class="chart-desc">ДИНАМИКА КАЧЕСТВА<br><small>Индекс удовлетворенности по годам</small></p>
+                        <canvas id="chart-3"></canvas>
                     </div>
                 </div>
             </div>
         </main>
-
-        <footer class="main-footer">
-            <a href="https://github.com/REKVID">GitHub</a>
-        </footer>
     </div>
-    <script src="app.js?v=3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js?v=101"></script>
 </body>
 
 </html>

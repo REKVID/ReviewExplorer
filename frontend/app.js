@@ -6,128 +6,109 @@ const input = document.getElementById('school-search'),
     searchBtn = document.getElementById('search-btn'),
     statusMsg = document.getElementById('status-msg');
 
-let timer;
+let timer, charts = [];
 
 input.oninput = (e) => {
     clearTimeout(timer);
     const q = e.target.value.trim();
     if (q.length < 2) return list.classList.add('hidden');
-
     timer = setTimeout(async () => {
-        try {
-            const res = await fetch(`http://localhost:8081/schools?q=${encodeURIComponent(q)}`);
-            const data = await res.json();
-            renderSuggestions(data ? data.slice(0, 5) : []);
-        } catch (err) {
-            console.error(err);
-        }
+        const res = await fetch(`http://localhost:8081/schools?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        renderSuggestions(data || []);
     }, 300);
 };
 
 function renderSuggestions(data) {
-    list.innerHTML = data.length ? '' : '<div class="suggestion-item">Объект не найден в базе</div>';
-    data.forEach(s => {
+    list.innerHTML = data.length ? '' : '<div class="suggestion-item">Не найдено</div>';
+    data.slice(0, 5).forEach(s => {
         const div = document.createElement('div');
         div.className = 'suggestion-item';
         div.textContent = s.full_name;
-        div.onclick = () => {
-            input.value = s.full_name;
-            list.classList.add('hidden');
-            startAnalysis(s.full_name);
-        };
+        div.onclick = () => { input.value = s.full_name; list.classList.add('hidden'); startAnalysis(s.full_name); };
         list.appendChild(div);
     });
     list.classList.remove('hidden');
 }
 
-document.onclick = (e) => {
-    if (!e.target.closest('.search-wrapper')) {
-        list.classList.add('hidden');
-    }
-};
-
 searchBtn.onclick = () => {
     const q = input.value.trim();
-    if (q.length < 3) return alert('Введите название объекта для анализа');
-    list.classList.add('hidden');
+    if (q.length < 3) return alert('Введите название');
     startAnalysis(q);
 };
 
 async function startAnalysis(query) {
     searchBtn.disabled = true;
     view.classList.remove('hidden');
-    title.textContent = query;
-    statusMsg.textContent = '⏳ Поиск в базе и сбор отзывов...';
-    text.textContent = 'Это может занять от 30 до 60 секунд, если отзывов еще нет в нашей системе.';
+    statusMsg.textContent = '⏳ Идет обработка данных...';
+    charts.forEach(c => c.destroy());
+    charts = [];
 
-    try {
-        const res = await fetch('http://localhost:8081/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: query })
+    const res = await fetch('http://localhost:8081/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+        title.textContent = data.school_name;
+        statusMsg.textContent = '✅ Аналитика готова';
+        text.innerHTML = `
+            <div style="font-weight:850; font-size:1.2rem; margin-bottom:1.5rem">Сводка: ${data.stats.total} отзывов</div>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:15px">
+                <div style="background:#f0fdf4; padding:15px; border-radius:15px; border:1px solid #dcfce7; color:#16a34a">
+                    <div style="font-size:1.5rem; font-weight:900">${data.stats.positive}</div>
+                    <small style="font-weight:700">ПОЗИТИВ</small>
+                </div>
+                <div style="background:#fef2f2; padding:15px; border-radius:15px; border:1px solid #fee2e2; color:#dc2626">
+                    <div style="font-size:1.5rem; font-weight:900">${data.stats.negative}</div>
+                    <small style="font-weight:700">НЕГАТИВ</small>
+                </div>
+                <div style="background:#f8fafc; padding:15px; border-radius:15px; border:1px solid #f1f5f9; color:#475569">
+                    <div style="font-size:1.5rem; font-weight:900">${data.stats.neutral}</div>
+                    <small style="font-weight:700">НЕЙТРАЛ</small>
+                </div>
+            </div>`;
+
+        data.analytics.forEach((item, i) => {
+            const isLine = item.type === 'line';
+            const isHoriz = i === 2;
+
+            const labels = (isLine ? item.payload.map(p => p.label) : Object.keys(item.payload))
+                .map(l => l.length > 12 ? l.split(' ') : l);
+
+            const values = isLine ? item.payload.map(p => p.value) : Object.values(item.payload);
+
+            const c = new Chart(document.getElementById(`chart-${i}`), {
+                type: item.type,
+                data: {
+                    labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: isLine ? 'rgba(79, 70, 229, 0.15)' : 'rgba(79, 70, 229, 0.9)',
+                        borderColor: '#4f46e5',
+                        borderWidth: isLine ? 3 : 0,
+                        borderRadius: 12,
+                        fill: isLine,
+                        tension: 0.4,
+                        pointRadius: isLine ? 4 : 0
+                    }]
+                },
+                options: {
+                    indexAxis: isHoriz ? 'y' : 'x',
+                    responsive: true,
+                    maintainAspectRatio: true, 
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { display: false }, ticks: { font: { weight: '700', size: 12, family: 'Inter' }, color: '#111827' } },
+                        x: { grid: { display: false }, ticks: { font: { weight: '700', size: 12, family: 'Inter' }, color: '#111827' } }
+                    }
+                }
+            });
+            charts.push(c);
         });
-
-        const data = await res.json();
-
-        if (res.ok) {
-            title.textContent = data.school_name;
-            statusMsg.textContent = '✅ Анализ успешно завершен';
-
-            let html = `
-                <div style="font-size: 1.2rem; margin-bottom: 1.5rem; font-weight: 600;">
-                    Общее количество отзывов: ${data.stats.total}
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; text-align: center; margin-bottom: 2rem;">
-                    <div style="padding: 1rem; background: #ecfdf5; border-radius: 12px;">
-                        <div style="color: #059669; font-size: 1.5rem; font-weight: 800;">${data.stats.positive}</div>
-                        <div style="color: #065f46; font-size: 0.9rem;">Положительных</div>
-                    </div>
-                    <div style="padding: 1rem; background: #fef2f2; border-radius: 12px;">
-                        <div style="color: #dc2626; font-size: 1.5rem; font-weight: 800;">${data.stats.negative}</div>
-                        <div style="color: #991b1b; font-size: 0.9rem;">Отрицательных</div>
-                    </div>
-                    <div style="padding: 1rem; background: #f8fafc; border-radius: 12px;">
-                        <div style="color: #64748b; font-size: 1.5rem; font-weight: 800;">${data.stats.neutral}</div>
-                        <div style="color: #334155; font-size: 0.9rem;">Нейтральных</div>
-                    </div>
-                </div>
-            `;
-
-            if (data.analytics) {
-                data.analytics.forEach(item => {
-                    html += `<h3 style="margin: 1.5rem 0 0.5rem; font-size: 1rem;">${item.name}</h3>`;
-                    const entries = Object.entries(item.payload);
-                    const max = Math.max(...entries.map(e => e[1])) || 1;
-
-                    entries.forEach(([label, value]) => {
-                        const width = (value / max) * 100;
-                        html += `
-                            <div style="margin-bottom: 0.5rem;">
-                                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 2px;">
-                                    <span>${label}</span>
-                                    <span>${typeof value === 'number' ? value.toFixed(1) : value}</span>
-                                </div>
-                                <div style="background: #f1f5f9; border-radius: 4px; height: 8px;">
-                                    <div style="background: var(--primary); width: ${width}%; height: 100%; border-radius: 4px; transition: width 1s;"></div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                });
-            }
-            text.innerHTML = html;
-        } else {
-            statusMsg.textContent = 'Внимание';
-            text.textContent = data.message || 'Объект не найден';
-        }
-    } catch (err) {
-        statusMsg.textContent = 'Ошибка системы';
-        text.textContent = 'Не удалось получить ответ от сервера';
-        console.error(err);
-    } finally {
-        searchBtn.disabled = false;
     }
+    searchBtn.disabled = false;
 }
-input.onkeypress = (e) => {
-    if (e.key === 'Enter') searchBtn.click();
-};
+input.onkeypress = (e) => { if (e.key === 'Enter') searchBtn.click(); };
