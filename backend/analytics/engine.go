@@ -43,8 +43,8 @@ func GetTheme(text string) string {
 }
 
 func Analyze(reviews []models.Review) []Result {
-	posThemes := make(map[string]int)
-	negThemes := make(map[string]int)
+	posThemes := make(map[string][]string)
+	negThemes := make(map[string][]string)
 	depth := map[string]float64{"Положительные": 0, "Отрицательные": 0}
 	posCount, negCount := 0, 0
 
@@ -58,11 +58,11 @@ func Analyze(reviews []models.Review) []Result {
 		if r.Sentiment == "positive" {
 			depth["Положительные"] += words
 			posCount++
-			posThemes[theme]++
+			posThemes[theme] = append(posThemes[theme], r.RawText)
 		} else if r.Sentiment == "negative" {
 			depth["Отрицательные"] += words
 			negCount++
-			negThemes[theme]++
+			negThemes[theme] = append(negThemes[theme], r.RawText)
 		}
 
 		if len(r.PublishedAt) >= 10 {

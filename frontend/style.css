@@ -8,6 +8,7 @@
     --primary: #4f46e5;
     --bg: #f3f4f6;
     --card-bg: #ffffff;
+    --sec: #6b7280;
 }
 
 body {
@@ -31,6 +32,24 @@ body {
     font-size: 1.6rem;
     color: var(--primary);
     letter-spacing: -1px;
+}
+
+nav ul {
+    list-style: none;
+    display: flex;
+    gap: 2rem;
+}
+
+nav a {
+    text-decoration: none;
+    color: var(--sec);
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+nav a:hover,
+nav a.active {
+    color: var(--primary);
 }
 
 .content {

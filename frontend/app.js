@@ -37,6 +37,13 @@ searchBtn.onclick = () => {
     startAnalysis(q);
 };
 
+function showReviews(title, list) {
+    const overlay = document.getElementById('review-overlay');
+    document.getElementById('overlay-title').textContent = title;
+    document.getElementById('overlay-content').innerHTML = list.map(t => `<div style="padding:15px; border-bottom:1px solid #f1f5f9; line-height:22">${t}</div>`).join('');
+    overlay.classList.remove('hidden');
+}
+
 async function startAnalysis(query) {
     searchBtn.disabled = true;
     view.classList.remove('hidden');
@@ -75,10 +82,11 @@ async function startAnalysis(query) {
             const isLine = item.type === 'line';
             const isHoriz = i === 2;
 
-            const labels = (isLine ? item.payload.map(p => p.label) : Object.keys(item.payload))
-                .map(l => l.length > 12 ? l.split(' ') : l);
+            const rawLabels = isLine ? item.payload.map(p => p.label) : Object.keys(item.payload);
+            const labels = rawLabels.map(l => l.length > 12 ? l.split(' ') : l);
 
-            const values = isLine ? item.payload.map(p => p.value) : Object.values(item.payload);
+            const rawValues = isLine ? item.payload.map(p => p.value) : Object.values(item.payload);
+            const values = rawValues.map(v => Array.isArray(v) ? v.length : v);
 
             const c = new Chart(document.getElementById(`chart-${i}`), {
                 type: item.type,
@@ -98,8 +106,18 @@ async function startAnalysis(query) {
                 options: {
                     indexAxis: isHoriz ? 'y' : 'x',
                     responsive: true,
-                    maintainAspectRatio: true, 
+                    maintainAspectRatio: true,
                     plugins: { legend: { display: false } },
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const idx = elements[0].index;
+                            const theme = rawLabels[idx];
+                            const source = rawValues[idx];
+                            if (Array.isArray(source)) {
+                                showReviews(`${theme} (${source.length} отзывов)`, source);
+                            }
+                        }
+                    },
                     scales: {
                         y: { grid: { display: false }, ticks: { font: { weight: '700', size: 12, family: 'Inter' }, color: '#111827' } },
                         x: { grid: { display: false }, ticks: { font: { weight: '700', size: 12, family: 'Inter' }, color: '#111827' } }
