@@ -6,7 +6,34 @@ const input = document.getElementById('school-search'),
     searchBtn = document.getElementById('search-btn'),
     statusMsg = document.getElementById('status-msg');
 
-let timer, charts = [];
+let timer, charts = [], map, geoLayer;
+
+DG.then(() => {
+    map = DG.map('map', { center: [55.7558, 37.6173], zoom: 11 });
+
+    fetch('http://localhost:8081/schools')
+        .then(res => res.json())
+        .then(schools => {
+            if (!schools) return;
+            const features = schools.map(s => ({
+                type: "Feature",
+                geometry: { type: "Point", coordinates: [s.lon, s.lat] },
+                properties: { name: s.full_name, shortName: s.short_name }
+            }));
+
+            geoLayer = DG.geoJson({ type: "FeatureCollection", features }, {
+                style: () => ({ color: "#4f46e5", weight: 2 }),
+                onEachFeature: (feature, layer) => {
+                    const name = feature.properties.name;
+                    const short = feature.properties.shortName || "Школа";
+                    layer.bindPopup(`<b>${short}</b><br><button onclick="startAnalysis('${name}')" style="margin-top:8px">Анализировать</button>`);
+
+                    layer.on('click', () => {
+                    });
+                }
+            }).addTo(map);
+        });
+});
 
 input.oninput = (e) => {
     clearTimeout(timer);
@@ -24,8 +51,17 @@ function renderSuggestions(data) {
     data.slice(0, 5).forEach(s => {
         const div = document.createElement('div');
         div.className = 'suggestion-item';
-        div.textContent = s.full_name;
-        div.onclick = () => { input.value = s.full_name; list.classList.add('hidden'); startAnalysis(s.full_name); };
+        div.textContent = s.short_name || s.full_name;
+        div.onclick = () => {
+            input.value = s.full_name;
+            list.classList.add('hidden');
+            startAnalysis(s.full_name);
+
+            if (s.lat && s.lon) {
+                map.setView([s.lat, s.lon], 15);
+                DG.popup().setLatLng([s.lat, s.lon]).setContent(s.short_name).openOn(map);
+            }
+        };
         list.appendChild(div);
     });
     list.classList.remove('hidden');
@@ -40,11 +76,13 @@ searchBtn.onclick = () => {
 function showReviews(title, list) {
     const overlay = document.getElementById('review-overlay');
     document.getElementById('overlay-title').textContent = title;
-    document.getElementById('overlay-content').innerHTML = list.map(t => `<div style="padding:15px; border-bottom:1px solid #f1f5f9; line-height:22">${t}</div>`).join('');
+    document.getElementById('overlay-content').innerHTML = list.map(t => `<div style="padding:15px; border-bottom:1px solid #f1f5f9; line-height:1.5">${t}</div>`).join('');
     overlay.classList.remove('hidden');
 }
 
 async function startAnalysis(query) {
+    if (!query) return;
+    input.value = query;
     searchBtn.disabled = true;
     view.classList.remove('hidden');
     statusMsg.textContent = '⏳ Идет обработка данных...';
