@@ -18,6 +18,16 @@ body {
     line-height: 1.6;
 }
 
+#particles-js {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+}
+
 .main-header {
     background: var(--card-bg);
     padding: 1.2rem 2rem;
@@ -52,10 +62,27 @@ nav a.active {
     color: var(--primary);
 }
 
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
 .content {
+    flex: 1;
     max-width: 900px;
     margin: 0 auto;
     padding: 4rem 1.5rem;
+    width: 100%;
+}
+
+.main-footer {
+    background: var(--card-bg);
+    text-align: center;
+    padding: 2rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    color: var(--sec);
+    width: 100%;
 }
 
 .hero-section {
@@ -122,7 +149,6 @@ button:hover {
     width: 100% !important;
     height: 400px !important;
     z-index: 1;
-    /* Чтобы не перекрывало выпадающие списки */
     cursor: crosshair;
 }
 
@@ -163,4 +189,101 @@ button:hover {
 
 canvas {
     max-width: 100% !important;
+}
+
+.reviews-active-layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 30px;
+    max-width: 1400px;
+    transition: all 0.3s ease;
+}
+
+
+#left-column {
+    width: 100%;
+    min-width: 0;
+    transition: width 0.3s ease;
+}
+
+#side-reviews-panel {
+    background: var(--card-bg);
+    border-radius: 28px;
+    padding: 20px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    height: calc(100vh - 100px);
+    position: sticky;
+    top: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.close-btn {
+    align-self: flex-end;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    color: var(--sec);
+    padding: 0;
+    line-height: 1;
+    margin-bottom: 10px;
+}
+
+.close-btn:hover {
+    color: var(--primary);
+    background: none !important;
+    transform: none !important;
+}
+
+@media (max-width: 1000px) {
+    .reviews-active-layout {
+        grid-template-columns: 1fr;
+    }
+
+    #side-reviews-panel {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 60vh;
+        z-index: 1000;
+        top: auto;
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
+    }
+}
+
+
+.footer-links {
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    align-items: center;
+}
+
+.footer-links a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.footer-links a:hover {
+    text-decoration: underline;
+}
+
+.divider {
+    color: #cbd5e1;
+}
+
+.copyright {
+    font-size: 0.9rem;
+}
+
+.about-card {
+    max-width: 800px;
+    margin: 0 auto;
 }
