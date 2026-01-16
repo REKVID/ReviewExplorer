@@ -9,4 +9,5 @@ type School struct {
 	Website   string  `json:"website"`
 	Lat       float64 `json:"lat"`
 	Lon       float64 `json:"lon"`
+	ReviewCnt int     `json:"review_count"`
 }

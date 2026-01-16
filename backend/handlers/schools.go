@@ -23,10 +23,21 @@ func GetSchools(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	if query == "" {
-		rows, err = db.DB.Query("SELECT id, full_name, short_name, lat, lon FROM schools WHERE lat IS NOT NULL LIMIT 200")
+		rows, err = db.DB.Query(`
+			SELECT s.id, s.full_name, s.short_name, s.lat, s.lon,
+			       EXISTS(SELECT 1 FROM reviews r WHERE r.school_id = s.id) AS review_count
+			FROM schools s
+			WHERE s.lat IS NOT NULL
+			LIMIT 200
+		`)
 	} else {
-		rows, err = db.DB.Query("SELECT id, full_name, short_name, lat, lon FROM schools WHERE full_name LIKE ? OR short_name LIKE ? LIMIT 5",
-			"%"+query+"%", "%"+query+"%")
+		rows, err = db.DB.Query(`
+			SELECT s.id, s.full_name, s.short_name, s.lat, s.lon,
+			       EXISTS(SELECT 1 FROM reviews r WHERE r.school_id = s.id) AS review_count
+			FROM schools s
+			WHERE s.full_name LIKE ? OR s.short_name LIKE ?
+			LIMIT 5
+		`, "%"+query+"%", "%"+query+"%")
 	}
 
 	if err != nil {
@@ -39,7 +50,7 @@ func GetSchools(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var s models.School
 		var lat, lon sql.NullFloat64
-		if err := rows.Scan(&s.ID, &s.FullName, &s.ShortName, &lat, &lon); err != nil {
+		if err := rows.Scan(&s.ID, &s.FullName, &s.ShortName, &lat, &lon, &s.ReviewCnt); err != nil {
 			continue
 		}
 		if lat.Valid {
