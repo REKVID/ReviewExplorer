@@ -6,8 +6,8 @@
 
 :root {
     --primary: #4f46e5;
-    --bg: #f3f4f6;
-    --card-bg: #ffffff;
+    --bg: #ffffff;
+    --card-bg: #c6bebe;
     --sec: #6b7280;
 }
 
@@ -174,7 +174,7 @@ button:hover {
 .suggestion-item {
     padding: 15px 25px;
     cursor: pointer;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid #f3f4f6 ;
     font-weight: 500;
 }
 
