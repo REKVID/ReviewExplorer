@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -17,13 +18,28 @@ type AnalyzeRequest struct {
 
 func GetSchools(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
+
+	var rows *sql.Rows
+	var err error
+
 	if query == "" {
-		json.NewEncoder(w).Encode([]string{})
-		return
+		rows, err = db.DB.Query(`
+			SELECT s.id, s.full_name, s.short_name, s.lat, s.lon,
+			       EXISTS(SELECT 1 FROM reviews r WHERE r.school_id = s.id) AS review_count
+			FROM schools s
+			WHERE s.lat IS NOT NULL
+			LIMIT 200
+		`)
+	} else {
+		rows, err = db.DB.Query(`
+			SELECT s.id, s.full_name, s.short_name, s.lat, s.lon,
+			       EXISTS(SELECT 1 FROM reviews r WHERE r.school_id = s.id) AS review_count
+			FROM schools s
+			WHERE s.full_name LIKE ? OR s.short_name LIKE ?
+			LIMIT 5
+		`, "%"+query+"%", "%"+query+"%")
 	}
 
-	rows, err := db.DB.Query("SELECT id, full_name, short_name FROM schools WHERE full_name LIKE ? OR short_name LIKE ? LIMIT 5",
-		"%"+query+"%", "%"+query+"%")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -33,8 +49,13 @@ func GetSchools(w http.ResponseWriter, r *http.Request) {
 	var schools []models.School
 	for rows.Next() {
 		var s models.School
-		if err := rows.Scan(&s.ID, &s.FullName, &s.ShortName); err != nil {
+		var lat, lon sql.NullFloat64
+		if err := rows.Scan(&s.ID, &s.FullName, &s.ShortName, &lat, &lon, &s.ReviewCnt); err != nil {
 			continue
+		}
+		if lat.Valid {
+			s.Lat = lat.Float64
+			s.Lon = lon.Float64
 		}
 		schools = append(schools, s)
 	}

@@ -7,66 +7,92 @@
     <title>ReviewExplorer</title>
     <link rel="stylesheet" href="style.css?v=101">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="https://maps.api.2gis.ru/2.0/loader.js?pkg=full&key=00ee5242-967e-48ff-a29d-bd001609c61f"></script>
 </head>
 
 <body>
+    <div id="particles-js"></div>
     <div class="wrapper">
         <header class="main-header">
             <div class="logo">ReviewExplorer</div>
             <nav>
                 <ul>
-                    <li><a href="#" class="active">Поиск</a></li>
-                    <li><a href="https://github.com/REKVID">GitHub</a></li>
+                    <li><a href="index.html" class="active">Поиск</a></li>
+                    <li><a href="about.html">О проекте</a></li>
                 </ul>
             </nav>
         </header>
 
-        <main class="content">
-            <div class="hero-section">
-                <h1>Анализ мнений</h1>
-                <p>Платформа для мониторинга объектов.</p>
+        <main class="content" id="main-container">
+            <div id="left-column">
+                <div class="hero-section">
+                    <h1>Анализ мнений</h1>
+                    <p>Платформа для мониторинга объектов.</p>
+                </div>
+                <div id="map"
+                    style="width: 100%; height: 400px; border-radius: 28px; margin-bottom: 2rem; border: 1px solid #e5e7eb; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); overflow: hidden;">
+                </div>
+
+                <div class="search-wrapper">
+                    <div class="search-container">
+                        <input type="text" id="school-search" placeholder="Введите название..." autocomplete="off">
+                        <button id="search-btn">Анализировать</button>
+                    </div>
+                    <div id="suggestions" class="suggestions-list hidden"></div>
+                </div>
+
+                <div id="analytics-view" class="hidden">
+                    <div class="card">
+                        <h2 id="school-title" style="color:var(--primary)">Школа</h2>
+                        <p id="status-msg" style="color:var(--sec); font-size:0.9rem; margin:10px 0"></p>
+                        <div id="analytics-text" style="border-top:1px solid #eee; padding-top:1rem"></div>
+                    </div>
+
+                    <div id="analytics-charts" style="margin-top:20px">
+                        <div class="chart-container">
+                            <p class="chart-desc">АНАЛИЗ СИЛЬНЫХ СТОРОН<br><small>Упоминания в позитивном
+                                    контексте</small>
+                            </p>
+                            <canvas id="chart-0"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <p class="chart-desc">КРИТИЧЕСКИЕ ЗОНЫ<br><small>Основные жалобы и проблемы</small></p>
+                            <canvas id="chart-1"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <p class="chart-desc">БАЛАНС МНЕНИЙ<br><small>Соотношение позитивных и негативных отзывов по категориям</small>
+                            </p>
+                            <canvas id="chart-2"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <p class="chart-desc">СЕЗОННОСТЬ АКТИВНОСТИ<br><small>Распределение отзывов по месяцам</small>
+                            </p>
+                            <canvas id="chart-3"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="search-wrapper">
-                <div class="search-container">
-                    <input type="text" id="school-search" placeholder="Введите название..." autocomplete="off">
-                    <button id="search-btn">Анализировать</button>
-                </div>
-                <div id="suggestions" class="suggestions-list hidden"></div>
-            </div>
-
-            <div id="analytics-view" class="hidden">
-                <div class="card">
-                    <h2 id="school-title" style="color:var(--primary)">Школа</h2>
-                    <p id="status-msg" style="color:var(--sec); font-size:0.9rem; margin:10px 0"></p>
-                    <div id="analytics-text" style="border-top:1px solid #eee; padding-top:1rem"></div>
-                </div>
-
-                <div id="analytics-charts" style="margin-top:20px">
-                    <div class="chart-container">
-                        <p class="chart-desc">АНАЛИЗ СИЛЬНЫХ СТОРОН<br><small>Упоминания в позитивном контексте</small>
-                        </p>
-                        <canvas id="chart-0"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <p class="chart-desc">КРИТИЧЕСКИЕ ЗОНЫ<br><small>Основные жалобы и проблемы</small></p>
-                        <canvas id="chart-1"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <p class="chart-desc">АРГУМЕНТИРОВАННОСТЬ МНЕНИЙ<br><small>Средний объем отзыва в словах</small>
-                        </p>
-                        <canvas id="chart-2"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <p class="chart-desc">ДИНАМИКА КАЧЕСТВА<br><small>Индекс удовлетворенности по годам</small></p>
-                        <canvas id="chart-3"></canvas>
-                    </div>
-                </div>
+            <div id="side-reviews-panel" class="hidden">
+                <button onclick="closeReviews()" class="close-btn">&times;</button>
+                <h3 id="side-panel-title">Отзывы</h3>
+                <div id="side-panel-content"></div>
             </div>
         </main>
+        <footer class="main-footer">
+            <div class="footer-links">
+                <a href="https://github.com/REKVID" target="_blank">GitHub</a>
+                <span class="divider">|</span>
+                <a href="https://data.mos.ru/opendata/2263?pageSize=10&pageIndex=0&isDynamic=false&version=6&release=194"
+                    target="_blank">Dataset (Mos.ru)</a>
+            </div>
+        </footer>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="app.js?v=101"></script>
+    <script src="app.js?v=102"></script>
 </body>
 
 </html>

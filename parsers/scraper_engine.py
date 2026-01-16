@@ -1,93 +1,67 @@
-import re
-import time
+import re, time, shutil
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-import shutil
-
-def parse_review(text):
-    data = {"date": None, "rating": "neutral", "text": text}
-    
-    # Дата
-    m = re.search(r'(\d{4}-\d{2}-\d{2})', text)
-    if m: data["date"] = m.group(1)
-
-    # Рейтинг
-    if "Положительный" in text: data["rating"] = "positive"
-    elif "Отрицательный" in text: data["rating"] = "negative"
-    else: data["rating"] = "neutral"
-
-    # Извлекаем основной текст
-    m = re.search(r'Это ложь\s+\d+\s*\n(.*?)(Ответить|$)', text, re.S)
-    if m: data["text"] = m.group(1).strip()
-    
-    return data
 
 def scrape_reviews(school_name):
-    options = Options()
-    options.add_argument("--headless")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--disable-blink-features=AutomationControlled")
-    
+    opts = Options()
+    for arg in ["--headless", "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu", "--disable-blink-features=AutomationControlled"]:
+        opts.add_argument(arg)
+    opts.add_experimental_option("excludeSwitches", ["enable-automation"])
+    opts.add_experimental_option('useAutomationExtension', False)
+    opts.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
     chrome_path = shutil.which("chromium") or shutil.which("google-chrome") or "/usr/bin/chromium"
-    options.binary_location = chrome_path
+    if chrome_path: opts.binary_location = chrome_path
     
     try:
-        service = Service(executable_path=shutil.which("chromedriver") or "/usr/bin/chromedriver")
-        driver = webdriver.Chrome(service=service, options=options)
+        driver = webdriver.Chrome(service=Service(shutil.which("chromedriver") or "/usr/bin/chromedriver"), options=opts)
+        driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
     except:
-        driver = webdriver.Chrome(options=options)
+        return []
     
     reviews = []
     try:
         driver.get("https://ya.ru")
-        time.sleep(2)
-
-        try:
-            search = driver.find_element(By.NAME, "text")
-        except:
-            search = driver.find_element(By.CSS_SELECTOR, "input")
-            
-        search.send_keys(f"schoolotzyv {school_name}")
+        time.sleep(3)
+        
+        try: search = driver.find_element(By.NAME, "text")
+        except: search = driver.find_element(By.CSS_SELECTOR, "input[type='text']")
+        
+        query = f"schoolotzyv {school_name.replace('Государственное бюджетное общеобразовательное учреждение', '').replace('города Москвы', '').strip()}"
+        search.send_keys(query)
         search.send_keys(Keys.RETURN)
         time.sleep(5)
-
-        # Ищем ссылку именно на страницу школы
-        link = None
-        for a in driver.find_elements(By.CSS_SELECTOR, "a[href*='schoolotzyv.ru']"):
-            href = a.get_attribute("href")
-            if href and "schoolotzyv.ru/schools" in href:
-                link = href
-                break
         
-        if not link:
-            return []
-
-        driver.get(link)
+        links = [l.get_attribute("href") for l in driver.find_elements(By.CSS_SELECTOR, "a[href*='schoolotzyv.ru']")]
+        if not links:
+            links = [l.get_attribute("href") for l in driver.find_elements(By.TAG_NAME, "a") if l.get_attribute("href") and "schoolotzyv.ru" in l.get_attribute("href")]
+        
+        url = next((l for l in links if 'schoolotzyv.ru/schools' in l), next((l for l in links if 'schoolotzyv.ru' in l and not any(x in l for x in ['search', 'static', 'yabs'])), None))
+        if not url: return []
+        
+        driver.get(url)
         time.sleep(5)
-        
-        # Скролл для подгрузки (как в save.py)
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight/2);")
         time.sleep(2)
         
-        # Ищем элементы отзывов по селекторам из save.py
-        blocks = driver.find_elements(By.CSS_SELECTOR, ".comment-item, .review-item, [class*='comment']")
-        
-        for b in blocks:
-            text = b.text.strip()
-            if len(text) < 50: continue
-            
-            parsed = parse_review(text)
-            if parsed["text"]:
-                reviews.append(parsed)
-
-    except Exception as e:
-        print(f"Error scraping: {e}")
+        seen = set()
+        for elem in driver.find_elements(By.CSS_SELECTOR, ".comment-item, .review-item, [class*='comment']"):
+            txt = elem.text.strip()
+            if len(txt) > 50 and not txt.startswith("Все отзывы") and re.search(r'#\d+|20\d{2}-\d{2}-\d{2}', txt):
+                date = re.search(r'(\d{4}-\d{2}-\d{2})', txt)
+                rating = "positive" if "Положительный" in txt else "negative" if "Отрицательный" in txt else "neutral"
+                text_match = re.search(r'Это ложь\s+\d+\s*\n(.*?)(?:Ответить|$)', txt, re.DOTALL)
+                text = text_match.group(1).strip() if text_match else txt
+                
+                key = (date.group(1) if date else "2024-01-01", text[:50])
+                if key not in seen:
+                    seen.add(key)
+                    reviews.append({"date": key[0], "rating": rating, "text": text})
+    except:
+        pass
     finally:
         driver.quit()
-        
+    
     return reviews
