@@ -32,11 +32,11 @@ func init() {
 	}
 	if err == nil {
 		if err := json.Unmarshal(data, &keywords); err != nil {
-			log.Printf("[Analytics] Keywords load error: %v", err)
+			log.Printf("[аналитика] ошибка загрузки ключевых слов: %v", err)
 			return
 		}
 		normalizeKeywords()
-		log.Printf("[Analytics] Keywords loaded: %d groups", len(keywords))
+		log.Printf("[аналитика] ключевые слова загружены: %d групп", len(keywords))
 	}
 }
 
