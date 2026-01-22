@@ -32,6 +32,7 @@ func main() {
 
 	r.Get("/schools", handlers.GetSchools)
 	r.Post("/analyze", handlers.Analyze)
+	r.Post("/refresh", handlers.Refresh)
 
 	fs := http.FileServer(http.Dir("./frontend"))
 	r.Handle("/*", http.StripPrefix("/", fs))

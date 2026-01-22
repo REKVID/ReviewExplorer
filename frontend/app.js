@@ -20,6 +20,7 @@ const COLORS = {
 
 const FONT = { weight: '700', size: 12, family: 'Inter' };
 const TICKS = { font: FONT, color: '#111827' };
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 if (typeof particlesJS !== 'undefined') {
     particlesJS('particles-js', {
@@ -64,7 +65,11 @@ if (typeof DG !== 'undefined' && $('map')) {
             onEachFeature: (feature, layer) => {
                 const name = feature.properties.name;
                 const short = feature.properties.shortName || "Школа";
-                layer.bindPopup(`<b>${short}</b><br><button onclick="startAnalysis('${name}')" style="margin-top:8px">Анализировать</button>`);
+                layer.bindPopup(
+                    `<b>${short}</b><br>
+                    <button onclick="startAnalysis('${name}')" style="margin-top:8px">Анализировать</button>
+                    <button onclick="refreshReviews('${name}')" style="margin-top:8px; margin-left:8px; background:${COLORS.negative}">Обновить</button>`
+                );
             }
         }).addTo(map);
     });
@@ -112,7 +117,7 @@ function showReviews(title, list) {
     const main = $('main-container');
     const side = $('side-reviews-panel');
     $('side-panel-title') && ($('side-panel-title').textContent = title);
-    $('side-panel-content') && ($('side-panel-content').innerHTML = list.map(t => `<div style="padding:15px; border-bottom:1px solid #f1f5f9; line-height:1.5">${t}</div>`).join(''));
+    $('side-panel-content') && ($('side-panel-content').innerHTML = list.map(t => `<div style="padding:15px; border-bottom:1px solid #f1f5f9; line-height:1.5">${esc(t)}</div>`).join(''));
     main?.classList.add('reviews-active-layout');
     side?.classList.remove('hidden');
 }
@@ -221,4 +226,10 @@ async function startAnalysis(query) {
     });
 
     searchBtn && (searchBtn.disabled = false);
+}
+
+async function refreshReviews(query) {
+    if (!query) return;
+    await apiPost('/refresh', { query }).catch(() => null);
+    startAnalysis(query);
 }
